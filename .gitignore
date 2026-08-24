@@ -42,7 +42,7 @@ build/
 # ==========================================
 # IDEs e Editores (VS Code, PyCharm, etc.)
 # ==========================================
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
