@@ -26,3 +26,4 @@ class ProjectList(BaseModel):
     relative_path: str
     status: str
     technologies: list[str] = []
+    pendency_count: int = 0

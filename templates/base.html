@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ProjectHub{% endblock %}</title>
+
+    <!-- DaisyUI and Tailwind CSS (CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    
+    <!-- Axios CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="/static/css/style.css">
+
+	<!-- Importa a biblioteca Marked.js via CDN -->
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <aside class="side-bar bg-slate-900 border-r border-slate-800">
+		<section class="sidebar-header">
+			<div>
+				<h1 class="text-2xl text-slate-200 font-bold">
+					ProjectHub
+				</h1>
+			</div>
+
+			<nav class="sidebar-nav bg-slate-950 border border-slate-800 text-sm text-gray-600">
+				<div class="active text-slate-400 hover:text-slate-200 transition-colors">
+					<i class="fa-solid fa-folder-open"></i>
+					<span>Projetos</span>
+				</div>
+				<div class="text-slate-400 hover:text-slate-200 transition-colors">
+					<i class="fa-solid fa-chart-line"></i>
+					<span>Dashboard</span>
+				</div>
+			</nav>
+		</section>
+
+		<section>
+			<form class="search-form bg-slate-950 border border-slate-800 focus-within:border-emerald-500">
+				<label for="input-search" class="text-slate-500 cursor-pointer">
+					<i class="fa-solid fa-magnifying-glass"></i>
+				</label>
+				<input id="input-search" type="text" placeholder="Buscar projetos"
+					class="text-slate-200 placeholder-slate-500 text-base">
+			</form>
+		</section>
+
+		{% include "partials/project-list.html" %}
+	</aside>
+
+    <main class="main-viewport"> 
+		{% block content %}
+			{% include "partials/project-details.html" %}
+		{% endblock %}
+	</main>
+		<!-- FLOATING TERMINAL -->
+		<button onclick="toggleTerminal()" title="Abrir Terminal"
+			class="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-slate-900/60 border border-white/10 backdrop-blur-md text-slate-100 flex items-center justify-center text-xl cursor-pointer shadow-lg transition-all duration-200 hover:bg-slate-800/80 hover:scale-105 hover:border-emerald-500 z-[90]">
+			<i class="fa-solid fa-terminal"></i>
+		</button>
+
+		<div id="terminalOverlay"
+			class="fixed bottom-6 right-6 w-[500px] h-[300px] rounded-xl bg-slate-950/90 backdrop-blur-lg border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.05)] flex flex-col translate-y-[120%] opacity-0 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-[100]">
+			
+			<div class="px-4 py-3 border-b border-white/5 flex justify-between items-center bg-black/20 rounded-t-xl">
+				<span class="font-mono text-[13px] text-slate-400 flex items-center gap-2">
+					<i class="fa-solid fa-terminal text-teal-500"></i> Local Console
+				</span>
+				<div class="flex gap-3">
+					<button onclick="clearLogs()" class="bg-transparent border-none text-slate-500 cursor-pointer text-base hover:text-slate-100 transition-colors">
+						<i class="fa-solid fa-trash"></i>
+					</button>
+					<button onclick="toggleTerminal()" class="bg-transparent border-none text-slate-500 cursor-pointer text-base hover:text-slate-100 transition-colors">
+						<i class="fa-solid fa-xmark"></i>
+					</button>
+				</div>
+			</div>
+			
+			<div id="terminalLogs" class="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed text-slate-300">
+				<div class="mb-[6px] text-teal-500">[SISTEMA] FastAPI ProjectHub conectado.</div>
+			</div>
+		</div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

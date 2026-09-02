@@ -5,7 +5,9 @@ from pathlib import Path
 
 import frontmatter
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from schemas.metric import Pendency, ProjectMetrics, Technology
 from utils.helpers_methods import get_last_commit
@@ -24,6 +26,7 @@ FOLDER_NOT_FOUND_MSG = (
 )
 
 metric_router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 
 
 def _count_note_pendencies(note: Path) -> int:
@@ -57,8 +60,8 @@ def _extract_pendencies(note: Path, project_name: str) -> list[Pendency]:
     return results
 
 
-@metric_router.get('', response_model=ProjectMetrics)
-async def get_metrics():
+@metric_router.get('', response_class=HTMLResponse)
+async def get_metrics(request: Request):
     if not MONITORED_FOLDER.exists() or not MONITORED_FOLDER.is_dir():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -117,7 +120,7 @@ async def get_metrics():
                 project_statuses['Em desenvolvimento'] -= 1
                 project_statuses['Parado'] += 1
 
-    return ProjectMetrics(
+    metrics_data = ProjectMetrics(
         total_projects=total_projects,
         in_progress_count=project_statuses.get('Em desenvolvimento', 0),
         completed_count=project_statuses.get('Concluído', 0),
@@ -126,9 +129,15 @@ async def get_metrics():
         pendency_count=pendency_count,
     )
 
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/dashboard.html",
+        context={"metrics": metrics_data}
+    )
 
-@metric_router.get('/technologies', response_model=list[Technology])
-async def get_technologies_used():
+
+@metric_router.get('/technologies', response_class=HTMLResponse)
+async def get_technologies_used(request: Request):
     if not MONITORED_FOLDER.exists() or not MONITORED_FOLDER.is_dir():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -159,14 +168,20 @@ async def get_technologies_used():
                     if name:
                         technologies[name] += 1
 
-    return [
+    tech_data = [
         Technology(name=name, count=quantity)
         for name, quantity in technologies.most_common()
     ]
 
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/technologies_list.html",
+        context={"technologies": tech_data}
+    )
 
-@metric_router.get('/pendencies', response_model=list[Pendency])
-async def get_project_pendencies():
+
+@metric_router.get('/pendencies', response_class=HTMLResponse)
+async def get_project_pendencies(request: Request):
     if not MONITORED_FOLDER.exists() or not MONITORED_FOLDER.is_dir():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -191,4 +206,8 @@ async def get_project_pendencies():
             if note.is_file() and note.suffix == '.md':
                 pendencies.extend(_extract_pendencies(note, project.name))
 
-    return pendencies
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/pendencies_list.html",
+        context={"pendencies": pendencies}
+    )

@@ -1,0 +1,46 @@
+<div class="projects-list-container">
+	{% if projects %}
+		{% for p in projects %}
+		<section class="project-card bg-slate-950 text-slate-200 border border-slate-800 hover:border-emerald-500 hover:bg-emerald-500/10 transition-all cursor-pointer {% if loop.first %}active{% endif %}"
+		data-project-path="{{ p.relative_path }}">
+			<div class="project-card-header">
+				<span class="font-semibold text-slate-200 truncate max-w-[130px]">
+					{{ p.name }}
+				</span>
+				{% include "partials/tag-status.html" %}
+			</div>
+
+			<div class="project-card-meta text-slate-400 font-medium mt-1">
+				<span class="truncate max-w-[130px]">
+					{% if p.technologies %}
+						{{ p.technologies | join(', ') }}
+					{% else %}
+						Não há tecnologias registradas
+					{% endif %}
+				</span>
+
+				<div>
+					<span class="pendency-count">{{ p.pendency_count | default(0) }} pendência(s)</span>
+				</div>
+			</div>
+		</section>
+		{% endfor %}
+	{% else %}
+		<section class="project-card bg-slate-950 text-slate-200 border border-slate-800 hover:border-emerald-500 hover:bg-emerald-500/10 transition-all cursor-pointer active">
+			<div class="project-card-header">
+				<span class="font-semibold text-slate-200 truncate max-w-[130px]">
+					API Gateway
+				</span>
+				{% include "partials/tag-status.html" %}
+			</div>
+
+			<div class="project-card-meta text-slate-400 font-medium mt-1">
+				<span class="truncate max-w-[130px]">FastAPI, Go, HTML, CSS</span>
+
+				<div>
+					<span>2 pendência(s)</span>
+				</div>
+			</div>
+		</section>
+	{% endif %}
+</div>

@@ -4,7 +4,9 @@ from typing import Optional
 
 import frontmatter
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from schemas.project import (
     Note,
@@ -28,7 +30,7 @@ FOLDER_NOT_FOUND_MSG = (
 )
 
 project_router = APIRouter()
-
+templates = Jinja2Templates(directory="templates")
 
 def _load_frontmatter(file_path: Path) -> dict:
     try:
@@ -45,8 +47,8 @@ def _count_note_pendencies(note: Path) -> int:
         return 0
 
 
-@project_router.get('', response_model=list[ProjectList])
-async def get_projects(q: Optional[str] | None = None):
+@project_router.get('', response_class=HTMLResponse)
+async def get_projects(request: Request, q: Optional[str] | None = None):
     if not MONITORED_FOLDER.exists() or not MONITORED_FOLDER.is_dir():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -73,6 +75,14 @@ async def get_projects(q: Optional[str] | None = None):
         status_value = 'Ideia'
         technologies = []
         note_target = project / 'sobre.md'
+        project_pendencies = 0
+        
+        try:
+            for note in project.iterdir():
+                if note.is_file() and note.suffix == '.md':
+                    project_pendencies += _count_note_pendencies(note)
+        except Exception:
+            pass
 
         if note_target.exists() and note_target.is_file():
             note_info = _load_frontmatter(note_target)
@@ -88,14 +98,27 @@ async def get_projects(q: Optional[str] | None = None):
                 relative_path=rel_path,
                 status=status_value,
                 technologies=technologies,
+                pendency_count=project_pendencies,
             )
         )
 
-    return projects
+    selected_project = None
+    if projects:
+        try:
+            resp = await get_project(request, projects[0].relative_path)
+            selected_project = resp.context.get('project')
+        except Exception:
+            selected_project = None
+
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/projects.html",
+        context={"projects": projects, "project": selected_project}
+    )
 
 
-@project_router.get('/{relative_path:path}', response_model=Project)
-async def get_project(relative_path: str):
+@project_router.get('/{relative_path:path}', response_class=HTMLResponse)
+async def get_project(request: Request, relative_path: str):
     if not MONITORED_FOLDER.exists() or not MONITORED_FOLDER.is_dir():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -135,12 +158,14 @@ async def get_project(relative_path: str):
     pendency_count = 0
 
     for note in dir_notes:
+        if not (note.is_file() and note.suffix == '.md'):
+            continue
+
         note_content = ''
-        if note.suffix == '.md':
-            try:
-                note_content = note.read_text(encoding='utf-8')
-            except Exception:
-                note_content = ''
+        try:
+            note_content = note.read_text(encoding='utf-8')
+        except Exception:
+            note_content = ''
 
         notes.append(
             Note(
@@ -150,8 +175,7 @@ async def get_project(relative_path: str):
             )
         )
 
-        if note.suffix == '.md':
-            pendency_count += _count_note_pendencies(note)
+        pendency_count += _count_note_pendencies(note)
 
         if note.name == 'sobre.md':
             info = _load_frontmatter(note)
@@ -165,7 +189,7 @@ async def get_project(relative_path: str):
     commit_timestamp = get_last_commit(project_code_path)
     formatted_commit_time = time_formatter(commit_timestamp)
 
-    return Project(
+    project_data = Project(
         name=full_path.name,
         status=status_value,
         technologies=technologies,
@@ -173,6 +197,12 @@ async def get_project(relative_path: str):
         pendency_count=pendency_count,
         last_commit=formatted_commit_time,
         notes=notes,
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/project-details.html",
+        context={"project": project_data}
     )
 
 
@@ -200,9 +230,20 @@ async def update_note(relative_path: str, note: NoteUpdate):
 
     try:
         full_path.write_text(note.content, encoding='utf-8')
+        
+        project_dir = full_path.parent
+        project_pendencies = 0
+        try:
+            for n in project_dir.iterdir():
+                if n.is_file() and n.suffix == '.md':
+                    project_pendencies += _count_note_pendencies(n)
+        except Exception:
+            pass
+
         return {
             'status': 'success',
             'message': f'Arquivo {full_path.name} atualizado!',
+            'pendency_count': project_pendencies,
         }
 
     except Exception as e:

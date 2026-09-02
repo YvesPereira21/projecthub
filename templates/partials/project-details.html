@@ -1,0 +1,80 @@
+<header>
+	<section>
+		<div class="header-title-status-group">
+			<span class="text-4xl text-slate-200 font-bold">{{ project.name if project else 'ProjectHub' }}</span>
+			{% include "partials/tag-status.html" %}
+		</div>
+
+		<div class="flex items-center gap-3">
+			<span id="pendency-badge" class="last-commit bg-amber-500/10 text-amber-400 border border-amber-500/20 {% if not project or project.pendency_count == 0 %}!hidden{% endif %}">
+				<i class="fa-regular fa-square-check mr-1.5 text-amber-500/70"></i>
+				<span class="pendency-count-text">{{ project.pendency_count if project else 0 }}</span> pendência(s)
+			</span>
+
+			<span class="last-commit bg-slate-950 text-slate-400 border border-slate-800">
+				<i class="fa-solid fa-code-commit mr-1.5 text-xs text-slate-500"></i>
+				Último commit: {{ project.last_commit if project else 'Sem commits' }}
+			</span>
+		</div>
+	</section>
+
+	<section>
+		<div class="header-tags-row">
+				{% for tech in project.technologies %}
+					{% include "partials/tag-tecnologies.html" %}
+				{% endfor %}
+		</div>
+
+		{% include "partials/commands.html" %}
+	</section>
+</header>
+
+<nav class="files-nav border-y border-slate-800 bg-slate-900/40">
+	<section class="files carousel rounded-none overflow-x-auto overflow-y-hidden flex-1 min-w-0 no-scrollbar mr-8">
+		{% if project and project.notes %}
+			{% for note in project.notes %}
+			<div class="carousel-item tab-item {% if loop.first %}active{% else %}text-slate-400{% endif %} hover:text-slate-200 transition-colors"
+			data-note-content="{{ note.content }}" data-note-path="{{ note.path }}">
+				<i class="fa-brands fa-markdown transition-colors"></i>
+				<span class="whitespace-nowrap">{{ note.name }}</span>
+			</div>
+			{% endfor %}
+		{% else %}
+			<div class="carousel-item tab-item text-slate-500 py-2">
+				<span>Nenhum arquivo</span>
+			</div>
+		{% endif %}
+	</section>
+
+	<section class="see-file">
+		<div class="active text-slate-200 hover:text-slate-100 transition-colors" data-mode="view">
+			<i class="fa-solid fa-eye text-xs"></i>
+			<span>Ver</span>
+		</div>
+		<div class="text-slate-400 hover:text-slate-200 transition-colors" data-mode="split">
+			<i class="fa-solid fa-table-columns text-xs"></i>
+			<span>Dividir</span>
+		</div>
+		<div class="text-slate-400 hover:text-slate-200 transition-colors" data-mode="edit">
+			<i class="fa-solid fa-pen text-xs"></i>
+			<span>Editar</span>
+		</div>
+	</section>
+</nav>
+
+<article class="workspace" data-mode="view">
+	<section class="content-file w-full">
+		{% if project and project.notes %}
+			<textarea id="editor-area" readonly class="w-full bg-slate-900/60 border border-slate-800 text-slate-300 font-mono resize-none outline-none text-sm p-7 rounded-2xl h-[350px] overflow-y-auto shadow-sm">{{ project.notes[0].content }}</textarea>
+
+			<div id="preview-area" class="w-full bg-slate-900/60 border border-slate-800 prose prose-invert max-w-none text-slate-300 text-sm p-7 rounded-2xl h-[350px] overflow-y-auto shadow-sm">
+				{{ project.notes[0].content }}
+			</div>
+		{% else %}
+			<div class="flex flex-col items-center justify-center py-16 text-center text-slate-400 bg-slate-900/60 border border-slate-800 rounded-2xl min-h-[400px]">
+				<i class="fa-regular fa-folder-open text-4xl text-slate-600 mb-3"></i>
+				<p class="text-base text-slate-300 font-sans">Esse projeto não possui arquivos criados</p>
+			</div>
+		{% endif %}
+	</section>
+</article>
