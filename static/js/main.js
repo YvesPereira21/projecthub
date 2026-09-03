@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    setupSidebarNav();
     projectSelection();
     fileSelection();
     modeSelection();
@@ -7,6 +8,86 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearch();
     renderMarkdown();
 })
+
+function setupSidebarNav() {
+    const navItems = document.querySelectorAll('.sidebar-nav div');
+    const mainViewport = document.querySelector('main.main-viewport');
+    if (!mainViewport || navItems.length === 0) return;
+
+    navItems.forEach(item => {
+        item.addEventListener('click', async () => {
+            if (item.classList.contains('active')) return;
+
+            navItems.forEach(n => {
+                n.classList.remove('active');
+                n.classList.add('text-slate-400');
+            });
+            item.classList.add('active');
+            item.classList.remove('text-slate-400');
+
+            const view = item.getAttribute('data-view') || item.querySelector('span')?.innerText.trim().toLowerCase();
+
+            if (view === 'dashboard' || view?.includes('dashboard')) {
+                try {
+                    const response = await axios.get('/api/v1/metrics');
+                    mainViewport.innerHTML = response.data;
+                } catch (error) {
+                    console.error('Erro ao carregar Dashboard com Axios:', error);
+                }
+            } else {
+                const activeCard = document.querySelector('.project-card.active') || document.querySelector('.project-card');
+                if (activeCard) {
+                    const relativePath = activeCard.getAttribute('data-project-path');
+                    if (relativePath) {
+                        try {
+                            const response = await axios.get(`/api/v1/projects/${relativePath}`);
+                            mainViewport.innerHTML = response.data;
+                            renderMarkdown();
+                        } catch (error) {
+                            console.error('Erro ao carregar projeto com Axios:', error);
+                        }
+                    }
+                }
+            }
+        });
+    });
+}
+
+function projectSelection() {
+    const projects = document.querySelectorAll('.project-card');
+    const mainViewport = document.querySelector('main.main-viewport');
+
+    if (projects.length === 0 || !mainViewport) return;
+
+    projects.forEach(card => {
+        card.addEventListener('click', async () => {
+            projects.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+
+            // Garante que a aba 'Projetos' fique ativa caso estivesse no Dashboard
+            const navProjects = document.querySelector('.sidebar-nav div[data-view="projects"]') || document.querySelector('.sidebar-nav div:first-child');
+            const navDashboard = document.querySelector('.sidebar-nav div[data-view="dashboard"]') || document.querySelector('.sidebar-nav div:last-child');
+            if (navProjects && navDashboard) {
+                navProjects.classList.add('active');
+                navProjects.classList.remove('text-slate-400');
+                navDashboard.classList.remove('active');
+                navDashboard.classList.add('text-slate-400');
+            }
+
+            const relativePath = card.getAttribute('data-project-path');
+            if (!relativePath) return;
+
+            try {
+                const response = await axios.get(`/api/v1/projects/${relativePath}`);
+                mainViewport.innerHTML = response.data;
+                renderMarkdown();
+            }
+            catch (error) {
+                console.error('Erro ao carregar detalhes do projeto com Axios:', error);
+            }
+        });
+    });
+}
 
 function formatMarkdownContent(text) {
     if (!text) return '';
@@ -62,31 +143,7 @@ function setupSearch() {
     });
 }
 
-function projectSelection() {
-    const projects = document.querySelectorAll('.project-card');
-    const mainViewport = document.querySelector('main.main-viewport');
 
-    if (projects.length === 0 || !mainViewport) return;
-
-    projects.forEach(card => {
-        card.addEventListener('click', async () => {
-            projects.forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-
-            const relativePath = card.getAttribute('data-project-path');
-            if (!relativePath) return
-
-            try {
-                const response = await axios.get(`/api/v1/projects/${relativePath}`);
-                mainViewport.innerHTML = response.data;
-                renderMarkdown();
-            }
-            catch (error) {
-                console.error('Erro ao carregar detalhes do projeto com Axios:', error);
-            }
-        })
-    })
-}
 
 function fileSelection() {
     document.addEventListener('click', async (event) => {
@@ -197,7 +254,7 @@ async function saveContent() {
                 const pendencyBadge = document.getElementById('pendency-badge');
                 if (pendencyBadge) {
                     const countText = pendencyBadge.querySelector('.pendency-count-text');
-                    if (countText) countText.innerText = pendencyCount;
+                    if (countText) countText.innerText = `${pendencyCount} pendência(s)`;
 
                     if (pendencyCount > 0) {
                         pendencyBadge.classList.remove('!hidden');
@@ -298,8 +355,11 @@ async function runCmd(cmd, cwd = '') {
     }
     
     if (logs) {
-        let displayCmd = cmd === 'docker_run' ? 'Verificando container docker...' : cmd;
+        let displayCmd = cmd === 'docker_run' ? 'docker compose up -d --build' : cmd;
         logs.innerHTML += `<div class="mb-[6px] text-slate-100 font-semibold">$ ${displayCmd}</div>`;
+        if (cmd === 'docker_run') {
+            logs.innerHTML += `<div class="mb-[6px] text-teal-400 font-mono text-xs"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Iniciando containers Docker em background...</div>`;
+        }
         logs.scrollTop = logs.scrollHeight;
         
         try {
@@ -310,20 +370,34 @@ async function runCmd(cmd, cwd = '') {
             
             const data = response.data;
             if (data.stdout) {
-                logs.innerHTML += `<div class="mb-[6px] text-slate-300 whitespace-pre-wrap">${data.stdout}</div>`;
+                logs.innerHTML += `<div class="mb-[6px] text-slate-300 text-xs whitespace-pre-wrap">${data.stdout}</div>`;
             }
             if (data.stderr) {
-                let colorClass = data.exit_code === 0 ? 'text-slate-300' : 'text-amber-500';
+                let colorClass = data.exit_code === 0 ? 'text-slate-400 text-xs' : 'text-amber-400 text-xs';
                 logs.innerHTML += `<div class="mb-[6px] ${colorClass} whitespace-pre-wrap">${data.stderr}</div>`;
             }
             
             if (data.exit_code === 0) {
-                logs.innerHTML += `<div class="mb-[6px] text-emerald-500">[OK] Comando executado com sucesso.</div>`;
+                if (cmd === 'docker_run') {
+                    logs.innerHTML += `<div class="mb-[6px] text-emerald-400 font-semibold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> [DOCKER] A aplicação Docker está rodando com sucesso!</div>`;
+                } else if (cmd.startsWith('code')) {
+                    logs.innerHTML += `<div class="mb-[6px] text-emerald-400">[OK] VSCode aberto com sucesso.</div>`;
+                } else {
+                    logs.innerHTML += `<div class="mb-[6px] text-emerald-400">[OK] Comando executado com sucesso.</div>`;
+                }
             } else {
                 logs.innerHTML += `<div class="mb-[6px] text-red-500">[ERRO] Falha ao executar. Código: ${data.exit_code}</div>`;
             }
         } catch (error) {
-            logs.innerHTML += `<div class="mb-[6px] text-red-500">[FALHA] Erro de comunicação com a API local.</div>`;
+            let errorMsg = 'Erro de comunicação com a API local.';
+            if (error.response?.data?.stderr) {
+                errorMsg = error.response.data.stderr;
+            } else if (error.response?.data?.detail) {
+                errorMsg = error.response.data.detail;
+            } else if (error.message) {
+                errorMsg = error.message;
+            }
+            logs.innerHTML += `<div class="mb-[6px] text-red-500 whitespace-pre-wrap">[FALHA] ${errorMsg}</div>`;
             console.error(error);
         }
         

@@ -51,8 +51,8 @@ async def run_command(command: Command):
 
         return {
             'exit_code': process.returncode,
-            'stdout': stdout.decode('utf-8').strip(),
-            'stderr': stderr.decode('utf-8').strip(),
+            'stdout': stdout.decode('utf-8', errors='replace').strip(),
+            'stderr': stderr.decode('utf-8', errors='replace').strip(),
         }
 
     except Exception as e:

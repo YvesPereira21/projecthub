@@ -92,6 +92,9 @@ async def get_metrics(request: Request):
             detail=f'Erro ao calcular métricas: {str(e)}',
         )
 
+    tech_counter = Counter()
+    all_pendencies = []
+
     for project in projects:
         total_projects += 1
         current_status = 'Ideia'
@@ -102,6 +105,7 @@ async def get_metrics(request: Request):
                 continue
 
             pendency_count += _count_note_pendencies(note)
+            all_pendencies.extend(_extract_pendencies(note, project.name))
 
             if note.name == 'sobre.md':
                 info = _load_frontmatter(note)
@@ -111,6 +115,13 @@ async def get_metrics(request: Request):
                 project_statuses[current_status] += 1
                 project_code_path = str(info.get('project_code_path', ''))
 
+                raw_techs = info.get('techs', [])
+                if isinstance(raw_techs, list):
+                    for tech in raw_techs:
+                        name = str(tech).strip()
+                        if name:
+                            tech_counter[name] += 1
+
         if current_status == 'Em desenvolvimento':
             last_commit = get_last_commit(project_code_path)
             if last_commit == 0:
@@ -119,6 +130,11 @@ async def get_metrics(request: Request):
             elif (time_now - last_commit) > thirty_days:
                 project_statuses['Em desenvolvimento'] -= 1
                 project_statuses['Parado'] += 1
+
+    tech_data = [
+        Technology(name=name, count=quantity)
+        for name, quantity in tech_counter.most_common()
+    ]
 
     metrics_data = ProjectMetrics(
         total_projects=total_projects,
@@ -132,7 +148,11 @@ async def get_metrics(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="pages/dashboard.html",
-        context={"metrics": metrics_data}
+        context={
+            "metrics": metrics_data,
+            "technologies": tech_data,
+            "pendencies": all_pendencies,
+        }
     )
 
 

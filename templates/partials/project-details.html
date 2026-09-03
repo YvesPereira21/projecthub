@@ -8,7 +8,7 @@
 		<div class="flex items-center gap-3">
 			<span id="pendency-badge" class="last-commit bg-amber-500/10 text-amber-400 border border-amber-500/20 {% if not project or project.pendency_count == 0 %}!hidden{% endif %}">
 				<i class="fa-regular fa-square-check mr-1.5 text-amber-500/70"></i>
-				<span class="pendency-count-text">{{ project.pendency_count if project else 0 }}</span> pendência(s)
+				<span class="pendency-count-text">{{ project.pendency_count if project else 0 }} pendência(s)</span>
 			</span>
 
 			<span class="last-commit bg-slate-950 text-slate-400 border border-slate-800">

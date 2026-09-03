@@ -1,0 +1,86 @@
+<section class="view-section macro-dashboard" id="macroDashboardView">
+    <div class="kpi-grid">
+        <div class="kpi-card glass-panel">
+            <span class="kpi-title">Total Projetos</span>
+            <span class="kpi-value text-slate-100">{{ metrics.total_projects }}</span>
+            <span class="kpi-subtitle">Monitorados</span>
+        </div>
+
+        <div class="kpi-card glass-panel">
+            <span class="kpi-title">Em Desenvolvimento</span>
+            <span class="kpi-value text-cyan-400">{{ metrics.in_progress_count }}</span>
+            <span class="kpi-subtitle">Projetos ativos</span>
+        </div>
+
+        <div class="kpi-card glass-panel">
+            <span class="kpi-title">Concluídos</span>
+            <span class="kpi-value text-emerald-400">{{ metrics.completed_count }}</span>
+            <span class="kpi-subtitle">Finalizados</span>
+        </div>
+
+        <div class="kpi-card glass-panel">
+            <span class="kpi-title">Parados</span>
+            <span class="kpi-value text-red-400">{{ metrics.stopped_count }}</span>
+            <span class="kpi-subtitle">Sem commit > 30d</span>
+        </div>
+
+        <div class="kpi-card glass-panel">
+            <span class="kpi-title">Ideias</span>
+            <span class="kpi-value text-purple-400">{{ metrics.ideas_count }}</span>
+            <span class="kpi-subtitle">No papel</span>
+        </div>
+
+        <div class="kpi-card glass-panel">
+            <span class="kpi-title">Pendências</span>
+            <span class="kpi-value text-amber-400">{{ metrics.pendency_count }}</span>
+            <span class="kpi-subtitle">Tarefas em aberto</span>
+        </div>
+    </div>
+
+    <div class="dash-sections">
+        <div class="dash-panel glass-panel">
+            <h3 class="dash-panel-title">
+                <i class="fa-solid fa-chart-pie text-purple-400"></i>
+                <span>Tecnologias usadas</span>
+            </h3>
+            <div class="tech-list">
+                {% if technologies %}
+                    {% for tech in technologies %}
+                    <div class="tech-item">
+                        <span class="text-slate-200 font-medium text-sm">{{ tech.name }}</span>
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                            {{ tech.count }} projeto(s)
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-slate-500 text-sm py-4 text-center">Nenhuma tecnologia registrada</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="dash-panel glass-panel">
+            <h3 class="dash-panel-title">
+                <i class="fa-solid fa-list-check text-emerald-400"></i>
+                <span>Todas pendências</span>
+            </h3>
+            <div class="tech-list" id="globalTasksList">
+                {% if pendencies %}
+                    {% for pendency in pendencies %}
+                    <div class="tech-item">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <i class="fa-regular fa-square-check text-amber-400 text-sm flex-shrink-0"></i>
+                            <span class="text-slate-200 text-sm truncate" title="{{ pendency.name }}">{{ pendency.name }}</span>
+                        </div>
+                        <span class="text-[10px] font-bold rounded-xl px-2 py-[2px] text-cyan-400 bg-cyan-500/15 border border-cyan-500/30 flex-shrink-0 ml-3">
+                            {{ pendency.project_name }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-slate-500 text-sm py-4 text-center">Nenhuma pendência encontrada</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
