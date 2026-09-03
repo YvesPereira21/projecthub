@@ -1,10 +1,11 @@
 import os
+import time
 from pathlib import Path
 from typing import Optional
 
 import frontmatter
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -32,6 +33,7 @@ FOLDER_NOT_FOUND_MSG = (
 project_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+
 def _load_frontmatter(file_path: Path) -> dict:
     try:
         post = frontmatter.load(file_path)
@@ -45,6 +47,67 @@ def _count_note_pendencies(note: Path) -> int:
         return note.read_text(encoding='utf-8').count('- [ ]')
     except Exception:
         return 0
+
+
+def _determine_project_status(
+    current_status: str,
+    project_pendencies: int,
+    project_code_path: str,
+) -> str:
+    commit_ts = get_last_commit(project_code_path)
+    thirty_days = 30 * 24 * 60 * 60
+    time_now = time.time()
+    is_recent = commit_ts > 0 and (time_now - commit_ts) <= thirty_days
+    is_old = commit_ts > 0 and (time_now - commit_ts) > thirty_days
+
+    if project_pendencies > 0:
+        if current_status == 'Concluído':
+            if is_old:
+                return 'Parado'
+            return 'Em desenvolvimento' if is_recent else 'Ideia'
+        if current_status == 'Em desenvolvimento' and is_old:
+            return 'Parado'
+        if current_status == 'Parado' and is_recent:
+            return 'Em desenvolvimento'
+    elif project_pendencies == 0 and is_recent:
+        return 'Concluído'
+
+    return current_status
+
+
+def _sync_project_status(project_dir: Path) -> tuple[str, int]:
+    project_pendencies = 0
+    try:
+        for n in project_dir.iterdir():
+            if n.is_file() and n.suffix == '.md':
+                project_pendencies += _count_note_pendencies(n)
+    except Exception:
+        pass
+
+    sobre_file = project_dir / 'sobre.md'
+    if not sobre_file.exists() or not sobre_file.is_file():
+        return 'Ideia', project_pendencies
+
+    try:
+        post = frontmatter.load(sobre_file)
+    except Exception:
+        return 'Ideia', project_pendencies
+
+    current_status = str(post.get('status', 'Ideia'))
+    project_code_path = str(post.get('project_code_path', ''))
+    new_status = _determine_project_status(
+        current_status, project_pendencies, project_code_path
+    )
+
+    if new_status != current_status:
+        try:
+            post['status'] = new_status
+            sobre_file.write_text(frontmatter.dumps(post), encoding='utf-8')
+        except Exception:
+            pass
+        return new_status, project_pendencies
+
+    return current_status, project_pendencies
 
 
 @project_router.get('', response_class=HTMLResponse)
@@ -72,21 +135,12 @@ async def get_projects(request: Request, q: Optional[str] | None = None):
         if q and q.lower() not in project.name.lower():
             continue
 
-        status_value = 'Ideia'
+        status_value, project_pendencies = _sync_project_status(project)
         technologies = []
         note_target = project / 'sobre.md'
-        project_pendencies = 0
-        
-        try:
-            for note in project.iterdir():
-                if note.is_file() and note.suffix == '.md':
-                    project_pendencies += _count_note_pendencies(note)
-        except Exception:
-            pass
 
         if note_target.exists() and note_target.is_file():
             note_info = _load_frontmatter(note_target)
-            status_value = str(note_info.get('status', 'Ideia'))
             raw_techs = note_info.get('techs', [])
             if isinstance(raw_techs, list):
                 technologies = [str(t) for t in raw_techs]
@@ -152,10 +206,9 @@ async def get_project(request: Request, relative_path: str):
         )
 
     notes = []
-    status_value = 'Ideia'
     technologies = []
     project_code_path = ''
-    pendency_count = 0
+    status_value, pendency_count = _sync_project_status(full_path)
 
     for note in dir_notes:
         if not (note.is_file() and note.suffix == '.md'):
@@ -175,11 +228,8 @@ async def get_project(request: Request, relative_path: str):
             )
         )
 
-        pendency_count += _count_note_pendencies(note)
-
         if note.name == 'sobre.md':
             info = _load_frontmatter(note)
-            status_value = str(info.get('status', 'Ideia'))
             raw_techs = info.get('techs', [])
             if isinstance(raw_techs, list):
                 technologies = [str(t) for t in raw_techs]
@@ -190,7 +240,10 @@ async def get_project(request: Request, relative_path: str):
     formatted_commit_time = time_formatter(commit_timestamp)
 
     notes.sort(
-        key=lambda n: (0 if n.name.lower() == 'sobre.md' else 1, n.name.lower())
+        key=lambda n: (
+            0 if n.name.lower() == 'sobre.md' else 1,
+            n.name.lower(),
+        )
     )
 
     project_data = Project(
@@ -234,20 +287,15 @@ async def update_note(relative_path: str, note: NoteUpdate):
 
     try:
         full_path.write_text(note.content, encoding='utf-8')
-        
+
         project_dir = full_path.parent
-        project_pendencies = 0
-        try:
-            for n in project_dir.iterdir():
-                if n.is_file() and n.suffix == '.md':
-                    project_pendencies += _count_note_pendencies(n)
-        except Exception:
-            pass
+        project_status, project_pendencies = _sync_project_status(project_dir)
 
         return {
             'status': 'success',
             'message': f'Arquivo {full_path.name} atualizado!',
             'pendency_count': project_pendencies,
+            'project_status': project_status,
         }
 
     except Exception as e:

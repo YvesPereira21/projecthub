@@ -237,9 +237,39 @@ async function saveContent() {
         });
         activeTab.setAttribute('data-note-content', newContent);
 
-        // Atualiza a contagem de pendências após 6 segundos
+        const projectStatus = response.data.project_status;
+        const pendencyCount = response.data.pendency_count;
+
+        // Atualização imediata das tags de status na tela
+        if (projectStatus) {
+            const activeCard = document.querySelector('.project-card.active');
+            if (activeCard) {
+                const cardTag = activeCard.querySelector('.tag-status');
+                if (cardTag) updateStatusTagElement(cardTag, projectStatus, 'sm');
+            }
+            const headerTag = document.querySelector('.header-title-status-group .tag-status');
+            if (headerTag) updateStatusTagElement(headerTag, projectStatus, 'lg');
+
+            // Sincroniza a aba sobre.md se existir
+            const sobreTab = Array.from(document.querySelectorAll('.files .tab-item')).find(tab => tab.querySelector('span')?.innerText.trim() === 'sobre.md');
+            if (sobreTab) {
+                let sobreContent = sobreTab.getAttribute('data-note-content') || '';
+                if (/^status:\s*.*$/m.test(sobreContent)) {
+                    sobreContent = sobreContent.replace(/^status:\s*.*$/m, `status: ${projectStatus}`);
+                    sobreTab.setAttribute('data-note-content', sobreContent);
+                    if (activeTab === sobreTab && editorArea) {
+                        const start = editorArea.selectionStart;
+                        const end = editorArea.selectionEnd;
+                        editorArea.value = editorArea.value.replace(/^status:\s*.*$/m, `status: ${projectStatus}`);
+                        editorArea.setSelectionRange(start, end);
+                        renderMarkdown();
+                    }
+                }
+            }
+        }
+
+        // Atualiza a contagem de pendências após o tempo configurado
         setTimeout(() => {
-            const pendencyCount = response.data.pendency_count;
             if (pendencyCount !== undefined) {
                 // Atualiza na barra lateral
                 const activeProjectCard = document.querySelector('.project-card.active');
@@ -247,6 +277,12 @@ async function saveContent() {
                     const pendencySpan = activeProjectCard.querySelector('.pendency-count');
                     if (pendencySpan) {
                         pendencySpan.innerText = `${pendencyCount} pendência(s)`;
+                    }
+                    if (projectStatus) {
+                        const cardStatusTag = activeProjectCard.querySelector('.tag-status');
+                        if (cardStatusTag) {
+                            updateStatusTagElement(cardStatusTag, projectStatus, 'sm');
+                        }
                     }
                 }
 
@@ -260,6 +296,13 @@ async function saveContent() {
                         pendencyBadge.classList.remove('!hidden');
                     } else {
                         pendencyBadge.classList.add('!hidden');
+                    }
+                }
+
+                if (projectStatus) {
+                    const headerStatusTag = document.querySelector('.header-title-status-group .tag-status');
+                    if (headerStatusTag) {
+                        updateStatusTagElement(headerStatusTag, projectStatus, 'lg');
                     }
                 }
             }
@@ -408,4 +451,34 @@ async function runCmd(cmd, cwd = '') {
 function clearLogs() {
     const logs = document.getElementById('terminalLogs');
     if (logs) logs.innerHTML = '';
+}
+
+function updateStatusTagElement(el, status, size) {
+    if (!el || !status) return;
+    const isLg = size === 'lg';
+    const sizeClasses = isLg
+        ? 'text-xs font-bold tracking-wide rounded-xl px-3 py-1'
+        : 'text-[9px] font-bold rounded-lg px-1.5 py-[1px]';
+
+    let colorClasses = '';
+    let label = status.toUpperCase();
+
+    if (status === 'Em desenvolvimento') {
+        label = 'EM DESENVOLVIMENTO';
+        colorClasses = 'text-cyan-400 bg-cyan-500/15 border border-cyan-500/30';
+    } else if (status === 'Concluído') {
+        label = 'CONCLUÍDO';
+        colorClasses = 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30';
+    } else if (status === 'Parado') {
+        label = 'PARADO';
+        colorClasses = 'text-red-400 bg-red-500/15 border border-red-500/30';
+    } else if (status === 'Ideia') {
+        label = 'IDEIA';
+        colorClasses = 'text-purple-400 bg-purple-500/15 border border-purple-500/30';
+    } else {
+        colorClasses = 'text-slate-400 bg-slate-500/15 border border-slate-500/30';
+    }
+
+    el.className = `tag-status ${sizeClasses} ${colorClasses}`;
+    el.innerText = label;
 }
