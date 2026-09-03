@@ -5,7 +5,7 @@ from pathlib import Path
 
 import frontmatter
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -27,6 +27,7 @@ FOLDER_NOT_FOUND_MSG = (
 
 metric_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+ALLOWED_NOTE_EXTENSIONS = ('.md', '.txt')
 
 
 def _count_note_pendencies(note: Path) -> int:
@@ -58,6 +59,39 @@ def _extract_pendencies(note: Path, project_name: str) -> list[Pendency]:
             if text:
                 results.append(Pendency(name=text, project_name=project_name))
     return results
+
+
+def _collect_project_data(
+    project: Path,
+    tech_counter: Counter,
+    all_pendencies: list[Pendency],
+) -> tuple[int, str, str]:
+    pendencies_in_proj = 0
+    current_status = 'Ideia'
+    project_code_path = ''
+
+    for note in project.iterdir():
+        if not (
+            note.is_file()
+            and note.suffix.lower() in ALLOWED_NOTE_EXTENSIONS
+        ):
+            continue
+
+        pendencies_in_proj += _count_note_pendencies(note)
+        all_pendencies.extend(_extract_pendencies(note, project.name))
+
+        if note.name == 'sobre.md':
+            info = _load_frontmatter(note)
+            current_status = str(info.get('status', 'Ideia'))
+            project_code_path = str(info.get('project_code_path', ''))
+            raw_techs = info.get('techs', [])
+            if isinstance(raw_techs, list):
+                for tech in raw_techs:
+                    name = str(tech).strip()
+                    if name:
+                        tech_counter[name] += 1
+
+    return pendencies_in_proj, current_status, project_code_path
 
 
 @metric_router.get('', response_class=HTMLResponse)
@@ -97,30 +131,14 @@ async def get_metrics(request: Request):
 
     for project in projects:
         total_projects += 1
-        current_status = 'Ideia'
-        project_code_path = ''
+        p_count, current_status, project_code_path = _collect_project_data(
+            project, tech_counter, all_pendencies
+        )
+        pendency_count += p_count
 
-        for note in project.iterdir():
-            if not (note.is_file() and note.suffix == '.md'):
-                continue
-
-            pendency_count += _count_note_pendencies(note)
-            all_pendencies.extend(_extract_pendencies(note, project.name))
-
-            if note.name == 'sobre.md':
-                info = _load_frontmatter(note)
-                current_status = str(info.get('status', 'Ideia'))
-                if current_status not in project_statuses:
-                    project_statuses[current_status] = 0
-                project_statuses[current_status] += 1
-                project_code_path = str(info.get('project_code_path', ''))
-
-                raw_techs = info.get('techs', [])
-                if isinstance(raw_techs, list):
-                    for tech in raw_techs:
-                        name = str(tech).strip()
-                        if name:
-                            tech_counter[name] += 1
+        if current_status not in project_statuses:
+            project_statuses[current_status] = 0
+        project_statuses[current_status] += 1
 
         if current_status == 'Em desenvolvimento':
             last_commit = get_last_commit(project_code_path)
@@ -223,7 +241,10 @@ async def get_project_pendencies(request: Request):
 
     for project in projects:
         for note in project.iterdir():
-            if note.is_file() and note.suffix == '.md':
+            if (
+                note.is_file()
+                and note.suffix.lower() in ALLOWED_NOTE_EXTENSIONS
+            ):
                 pendencies.extend(_extract_pendencies(note, project.name))
 
     return templates.TemplateResponse(

@@ -32,6 +32,7 @@ FOLDER_NOT_FOUND_MSG = (
 
 project_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+ALLOWED_NOTE_EXTENSIONS = ('.md', '.txt')
 
 
 def _load_frontmatter(file_path: Path) -> dict:
@@ -79,7 +80,7 @@ def _sync_project_status(project_dir: Path) -> tuple[str, int]:
     project_pendencies = 0
     try:
         for n in project_dir.iterdir():
-            if n.is_file() and n.suffix == '.md':
+            if n.is_file() and n.suffix.lower() in ALLOWED_NOTE_EXTENSIONS:
                 project_pendencies += _count_note_pendencies(n)
     except Exception:
         pass
@@ -211,7 +212,9 @@ async def get_project(request: Request, relative_path: str):
     status_value, pendency_count = _sync_project_status(full_path)
 
     for note in dir_notes:
-        if not (note.is_file() and note.suffix == '.md'):
+        if not (
+            note.is_file() and note.suffix.lower() in ALLOWED_NOTE_EXTENSIONS
+        ):
             continue
 
         note_content = ''
