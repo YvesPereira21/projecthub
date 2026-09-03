@@ -7,7 +7,9 @@
 				<span class="font-semibold text-slate-200 truncate max-w-[130px]">
 					{{ p.name }}
 				</span>
-				{% include "partials/tag-status.html" %}
+				{% with size = 'sm' %}
+					{% include "partials/tag-status.html" %}
+				{% endwith %}
 			</div>
 
 			<div class="project-card-meta text-slate-400 font-medium mt-1">
@@ -31,7 +33,9 @@
 				<span class="font-semibold text-slate-200 truncate max-w-[130px]">
 					API Gateway
 				</span>
-				{% include "partials/tag-status.html" %}
+				{% with size = 'sm' %}
+					{% include "partials/tag-status.html" %}
+				{% endwith %}
 			</div>
 
 			<div class="project-card-meta text-slate-400 font-medium mt-1">

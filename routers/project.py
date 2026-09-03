@@ -189,6 +189,10 @@ async def get_project(request: Request, relative_path: str):
     commit_timestamp = get_last_commit(project_code_path)
     formatted_commit_time = time_formatter(commit_timestamp)
 
+    notes.sort(
+        key=lambda n: (0 if n.name.lower() == 'sobre.md' else 1, n.name.lower())
+    )
+
     project_data = Project(
         name=full_path.name,
         status=status_value,

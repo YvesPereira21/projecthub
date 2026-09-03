@@ -1,23 +1,30 @@
 {% set current_status = status | default(p.status if p is defined else (project.status if project is defined else 'Em desenvolvimento')) %}
+{% set tag_size = size | default('sm') %}
+
+{% if tag_size == 'lg' %}
+	{% set size_classes = "text-xs font-bold tracking-wide rounded-xl px-3 py-1" %}
+{% else %}
+	{% set size_classes = "text-[9px] font-bold rounded-lg px-1.5 py-[1px]" %}
+{% endif %}
 
 {% if current_status == 'Em desenvolvimento' %}
-<div class="tag-status text-[10px] font-bold rounded-xl px-2 py-[2px] text-cyan-400 bg-cyan-500/15 border border-cyan-500/30">
+<div class="tag-status {{ size_classes }} text-cyan-400 bg-cyan-500/15 border border-cyan-500/30">
 	EM DESENVOLVIMENTO
 </div>
 {% elif current_status == 'Ideia' %}
-<div class="tag-status text-[10px] font-bold rounded-xl px-2 py-[2px] text-purple-400 bg-purple-500/15 border border-purple-500/30">
+<div class="tag-status {{ size_classes }} text-purple-400 bg-purple-500/15 border border-purple-500/30">
 	IDEIA
 </div>
 {% elif current_status == 'Concluído' %}
-<div class="tag-status text-[10px] font-bold rounded-xl px-2 py-[2px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30">
+<div class="tag-status {{ size_classes }} text-emerald-400 bg-emerald-500/15 border border-emerald-500/30">
 	CONCLUÍDO
 </div>
 {% elif current_status == 'Parado' %}
-<div class="tag-status text-[10px] font-bold rounded-xl px-2 py-[2px] text-red-400 bg-red-500/15 border border-red-500/30">
+<div class="tag-status {{ size_classes }} text-red-400 bg-red-500/15 border border-red-500/30">
 	PARADO
 </div>
 {% else %}
-<div class="tag-status text-[10px] font-bold rounded-xl px-2 py-[2px] text-slate-400 bg-slate-500/15 border border-slate-500/30">
+<div class="tag-status {{ size_classes }} text-slate-400 bg-slate-500/15 border border-slate-500/30">
 	{{ current_status | upper }}
 </div>
 {% endif %}

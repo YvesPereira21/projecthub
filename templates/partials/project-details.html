@@ -2,7 +2,9 @@
 	<section>
 		<div class="header-title-status-group">
 			<span class="text-4xl text-slate-200 font-bold">{{ project.name if project else 'ProjectHub' }}</span>
-			{% include "partials/tag-status.html" %}
+			{% with size = 'lg' %}
+				{% include "partials/tag-status.html" %}
+			{% endwith %}
 		</div>
 
 		<div class="flex items-center gap-3">
