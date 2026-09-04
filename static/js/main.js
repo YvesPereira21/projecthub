@@ -64,7 +64,7 @@ function projectSelection() {
             projects.forEach(c => c.classList.remove('active'));
             card.classList.add('active');
 
-            // Garante que a aba 'Projetos' fique ativa caso estivesse no Dashboard
+            // Ensure the 'Projects' tab is active if previously on Dashboard
             const navProjects = document.querySelector('.sidebar-nav div[data-view="projects"]') || document.querySelector('.sidebar-nav div:first-child');
             const navDashboard = document.querySelector('.sidebar-nav div[data-view="dashboard"]') || document.querySelector('.sidebar-nav div:last-child');
             if (navProjects && navDashboard) {
@@ -150,7 +150,7 @@ function fileSelection() {
         const clickedTab = event.target.closest('.files .tab-item');
         if (!clickedTab || clickedTab.classList.contains('active')) return;
 
-        // Se houver um salvamento pendente, salva a aba atual ANTES de trocar
+        // If there is a pending save, save current tab BEFORE switching
         if (saveTimeOut) {
             clearTimeout(saveTimeOut);
             await saveContent();
@@ -210,7 +210,7 @@ let saveTimeOut = null;
 function setupAutoSave() {
     document.addEventListener('input', (event) => {
         if (event.target.id === 'editor-area') {
-            renderMarkdown(); // Atualiza o preview de markdown em tempo real
+            renderMarkdown(); // Updates markdown preview in real time
 
             clearTimeout(saveTimeOut);
 
@@ -240,7 +240,7 @@ async function saveContent() {
         const projectStatus = response.data.project_status;
         const pendencyCount = response.data.pendency_count;
 
-        // Atualização imediata das tags de status na tela
+        // Immediate update of status tags on screen
         if (projectStatus) {
             const activeCard = document.querySelector('.project-card.active');
             if (activeCard) {
@@ -250,7 +250,7 @@ async function saveContent() {
             const headerTag = document.querySelector('.header-title-status-group .tag-status');
             if (headerTag) updateStatusTagElement(headerTag, projectStatus, 'lg');
 
-            // Sincroniza a aba sobre.md se existir
+            // Synchronize sobre.md tab if it exists
             const sobreTab = Array.from(document.querySelectorAll('.files .tab-item')).find(tab => tab.querySelector('span')?.innerText.trim() === 'sobre.md');
             if (sobreTab) {
                 let sobreContent = sobreTab.getAttribute('data-note-content') || '';
@@ -268,10 +268,10 @@ async function saveContent() {
             }
         }
 
-        // Atualiza a contagem de pendências após o tempo configurado
+        // Update pendency count after configured delay
         setTimeout(() => {
             if (pendencyCount !== undefined) {
-                // Atualiza na barra lateral
+                // Update in sidebar
                 const activeProjectCard = document.querySelector('.project-card.active');
                 if (activeProjectCard) {
                     const pendencySpan = activeProjectCard.querySelector('.pendency-count');
@@ -286,7 +286,7 @@ async function saveContent() {
                     }
                 }
 
-                // Atualiza no painel principal
+                // Update in main panel
                 const pendencyBadge = document.getElementById('pendency-badge');
                 if (pendencyBadge) {
                     const countText = pendencyBadge.querySelector('.pendency-count-text');
@@ -308,7 +308,7 @@ async function saveContent() {
             }
         }, 2000);
 
-        // Aplica as cores e remove a borda inferior:
+        // Apply colors and remove bottom border:
         const classes = [
             '!bg-cyan-500/15',
             '!ring-1',
@@ -321,7 +321,7 @@ async function saveContent() {
         activeTab.classList.add(...classes);
 
         setTimeout(() => {
-            // Remove as classes suavemente ao terminar
+            // Smoothly remove classes upon completion
             activeTab.classList.remove(...classes);
         }, 1500);
     } catch (error) {
@@ -351,7 +351,7 @@ function setupSSE() {
                     const response = await axios.get(`/api/v1/projects/${projectPath}`);
                     mainViewport.innerHTML = response.data;
 
-                    // Restaurar estado (aba e modo)
+                    // Restore state (tab and mode)
                     const newWorkspace = document.querySelector('article.workspace');
                     if (newWorkspace) newWorkspace.setAttribute('data-mode', mode);
 
@@ -378,7 +378,7 @@ function setupSSE() {
                 }
             }
         } catch (e) {
-            // Ignorar mensagens que não sejam JSON estruturado do watcher
+            // Ignore messages that are not structured JSON from watcher
         }
     };
 }

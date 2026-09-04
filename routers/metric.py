@@ -3,14 +3,16 @@ import time
 from collections import Counter
 from pathlib import Path
 
-import frontmatter
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from schemas.metric import Pendency, ProjectMetrics, Technology
-from utils.helpers_methods import get_last_commit
+from schemas.metric import ProjectMetrics, Technology
+from utils.helpers_methods import (
+    collect_project_data,
+    get_last_commit,
+)
 
 load_dotenv()
 
@@ -27,71 +29,6 @@ FOLDER_NOT_FOUND_MSG = (
 
 metric_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-ALLOWED_NOTE_EXTENSIONS = ('.md', '.txt')
-
-
-def _count_note_pendencies(note: Path) -> int:
-    try:
-        return note.read_text(encoding='utf-8').count('- [ ]')
-    except Exception:
-        return 0
-
-
-def _load_frontmatter(file_path: Path) -> dict:
-    try:
-        post = frontmatter.load(file_path)
-        return post.metadata
-    except Exception:
-        return {}
-
-
-def _extract_pendencies(note: Path, project_name: str) -> list[Pendency]:
-    try:
-        content = note.read_text(encoding='utf-8')
-    except Exception:
-        return []
-
-    results = []
-    for line in content.splitlines():
-        clean = line.strip()
-        if clean.startswith(('- [ ]', '* [ ]')):
-            text = clean[5:].strip()
-            if text:
-                results.append(Pendency(name=text, project_name=project_name))
-    return results
-
-
-def _collect_project_data(
-    project: Path,
-    tech_counter: Counter,
-    all_pendencies: list[Pendency],
-) -> tuple[int, str, str]:
-    pendencies_in_proj = 0
-    current_status = 'Ideia'
-    project_code_path = ''
-
-    for note in project.iterdir():
-        if not (
-            note.is_file()
-            and note.suffix.lower() in ALLOWED_NOTE_EXTENSIONS
-        ):
-            continue
-
-        pendencies_in_proj += _count_note_pendencies(note)
-        all_pendencies.extend(_extract_pendencies(note, project.name))
-
-        if note.name == 'sobre.md':
-            info = _load_frontmatter(note)
-            current_status = str(info.get('status', 'Ideia'))
-            project_code_path = str(info.get('project_code_path', ''))
-            raw_techs = info.get('techs', [])
-            if isinstance(raw_techs, list):
-                for tech in raw_techs:
-                    name = str(tech).strip()
-                    if name:
-                        tech_counter[name] += 1
-
-    return pendencies_in_proj, current_status, project_code_path
 
 
 @metric_router.get('', response_class=HTMLResponse)
@@ -131,7 +68,7 @@ async def get_metrics(request: Request):
 
     for project in projects:
         total_projects += 1
-        p_count, current_status, project_code_path = _collect_project_data(
+        p_count, current_status, project_code_path = collect_project_data(
             project, tech_counter, all_pendencies
         )
         pendency_count += p_count
@@ -171,84 +108,4 @@ async def get_metrics(request: Request):
             "technologies": tech_data,
             "pendencies": all_pendencies,
         }
-    )
-
-
-@metric_router.get('/technologies', response_class=HTMLResponse)
-async def get_technologies_used(request: Request):
-    if not MONITORED_FOLDER.exists() or not MONITORED_FOLDER.is_dir():
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=FOLDER_NOT_FOUND_MSG,
-        )
-
-    technologies = Counter()
-    try:
-        projects = [
-            p
-            for p in MONITORED_FOLDER.iterdir()
-            if p.is_dir() and not p.name.startswith('.')
-        ]
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'Erro ao buscar tecnologias: {str(e)}',
-        )
-
-    for project in projects:
-        note_target = project / 'sobre.md'
-        if note_target.exists() and note_target.is_file():
-            info = _load_frontmatter(note_target)
-            raw_techs = info.get('techs', [])
-            if isinstance(raw_techs, list):
-                for tech in raw_techs:
-                    name = str(tech).strip()
-                    if name:
-                        technologies[name] += 1
-
-    tech_data = [
-        Technology(name=name, count=quantity)
-        for name, quantity in technologies.most_common()
-    ]
-
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/technologies_list.html",
-        context={"technologies": tech_data}
-    )
-
-
-@metric_router.get('/pendencies', response_class=HTMLResponse)
-async def get_project_pendencies(request: Request):
-    if not MONITORED_FOLDER.exists() or not MONITORED_FOLDER.is_dir():
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=FOLDER_NOT_FOUND_MSG,
-        )
-
-    pendencies: list[Pendency] = []
-    try:
-        projects = [
-            p
-            for p in MONITORED_FOLDER.iterdir()
-            if p.is_dir() and not p.name.startswith('.')
-        ]
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'Erro ao buscar pendências: {str(e)}',
-        )
-
-    for project in projects:
-        for note in project.iterdir():
-            if (
-                note.is_file()
-                and note.suffix.lower() in ALLOWED_NOTE_EXTENSIONS
-            ):
-                pendencies.extend(_extract_pendencies(note, project.name))
-
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/pendencies_list.html",
-        context={"pendencies": pendencies}
     )

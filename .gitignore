@@ -1,5 +1,5 @@
 # ==========================================
-# Python e Ambientes Virtuais
+# Python and Virtual Environments
 # ==========================================
 __pycache__/
 *.py[cod]
@@ -15,7 +15,7 @@ venv.bak/
 .ruff_cache/
 
 # ==========================================
-# Poetry e Build
+# Poetry and Build
 # ==========================================
 .poetry/
 dist/
@@ -24,23 +24,23 @@ build/
 .eggs/
 
 # ==========================================
-# Arquivos Locais do Obsidian
+# Obsidian Local Files
 # ==========================================
-# Ignora configurações locais do espaço de trabalho do Obsidian
-# mantendo suas notas .md rastreadas no Git.
+# Ignore Obsidian workspace local configuration
+# while keeping your .md notes tracked in Git.
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .obsidian/plugins/*/data.json
 
 # ==========================================
-# Variáveis de Ambiente e Segredos
+# Environment Variables and Secrets
 # ==========================================
 .env
 .env.local
 .env.*.local
 
 # ==========================================
-# IDEs e Editores (VS Code, PyCharm, etc.)
+# IDEs and Editors (VS Code, PyCharm, etc.)
 # ==========================================
 .vscode/
 !.vscode/settings.json
@@ -52,10 +52,9 @@ build/
 *~
 
 # ==========================================
-# Logs e Arquivos Temporários
+# Logs and Temporary Files
 # ==========================================
 *.log
 *.tmp
 *.bak
 .DS_Store
-Thumbs.db
