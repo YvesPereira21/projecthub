@@ -35,18 +35,20 @@ O **ProjectHub** é uma aplicação web feita sob medida para desenvolvedores ce
 ## Tecnologias utilizadas
 
 - **Backend:**
-  - [Python 3.12+](https://www.python.org/)
-  - [FastAPI](https://fastapi.tiangolo.com/) (Framework web moderno e assíncrono)
-  - [Uvicorn](https://www.uvicorn.org/) (Servidor ASGI)
-  - [Watchfiles](https://watchfiles.helpmanual.io/) (Monitoramento assíncrono de arquivos via kernel/inotify)
-  - [python-frontmatter](https://github.com/eyeseast/python-frontmatter) (Parsing e manipulação de frontmatter YAML)
-  - [Jinja2](https://palletsprojects.com/p/jinja/) (Renderização de templates HTML)
-  - [Poetry](https://python-poetry.org/) (Gerenciamento de dependências e ambientes virtuais)
+  - Python 3.12+
+  - FastAPI (framework web)
+  - Uvicorn (servidor ASGI)
+  - Watchfiles (monitoramento assíncrono de arquivos via kernel/inotify)
+  - Python-frontmatter (parsing e manipulação de frontmatter YAML)
+  - Jinja2 (renderização de templates HTML)
+  - Poetry (gerenciamento de dependências e ambientes virtuais)
 - **Frontend:**
-  - [Tailwind CSS](https://tailwindcss.com/)
-  - [Axios](https://axios-http.com/)
-  - [FontAwesome](https://fontawesome.com/)
-  - Vanilla JavaScript & Showdown Parser
+  - Tailwind CSS
+  - daisyUI
+  - Marked.js (renderização de markdown)
+  - Axios
+  - FontAwesome
+  - Vanilla JavaScript
 
 ---
 
