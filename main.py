@@ -1,8 +1,13 @@
+import os
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from routers import command, metric, project, watcher
+
+load_dotenv()
 
 version = 'v1'
 
@@ -42,3 +47,10 @@ app.include_router(
     prefix=f'/api/{version}/watchers',
     tags=['watchers'],
 )
+
+if __name__ == '__main__':
+    import uvicorn
+
+    host = os.getenv('APP_HOST', '127.0.0.1')
+    port = int(os.getenv('APP_PORT', '8000'))
+    uvicorn.run('main:app', host=host, port=port, reload=True)

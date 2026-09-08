@@ -139,13 +139,23 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configurar variáveis de ambiente
-Copie o exemplo de `.env` e configure o caminho absoluto da sua pasta de anotações:
+Copie o exemplo de `.env` e configure as variáveis de acordo com as necessidades do seu ambiente:
 ```bash
 cp .env-example .env
 ```
 Edite o arquivo `.env`:
 ```ini
+# Caminho absoluto da pasta de anotações monitorada
 FOLDER_PATH="/home/seu_usuario/caminho/para/as/notas"
+
+# Endereço de rede do servidor (127.0.0.1 para acesso seguro local ao seu computador)
+APP_HOST="127.0.0.1"
+
+# Porta em que o servidor responderá
+APP_PORT="8000"
+
+# Identificador de tela gráfica para abertura do VS Code
+DISPLAY_ENV=":0"
 ```
 
 ### 4. Executar em modo desenvolvimento
@@ -153,15 +163,16 @@ FOLDER_PATH="/home/seu_usuario/caminho/para/as/notas"
 - **Se estiver usando Poetry:**
   ```bash
   poetry run task dev
-  # ou diretamente: poetry run uvicorn main:app --reload
+  # ou diretamente com python: poetry run python main.py
   ```
 
 - **Se estiver usando pip (com o `.venv` ativado):**
   ```bash
-  uvicorn main:app --reload
+  python main.py
+  # ou diretamente com uvicorn: uvicorn main:app --reload
   ```
 
-Acesse no navegador: **`http://localhost:8000`**
+Acesse no navegador: **`http://localhost:8000`** (ou o host e porta definidos no seu `.env`)
 
 ### 5. Comandos úteis (Taskipy - apenas Poetry)
 - `poetry run task lint`: Executa a verificação estática de código com o `ruff`.
@@ -227,13 +238,15 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/home/seu_usuario/caminho/para/seu/projeto/projecthub
+Environment="APP_HOST=127.0.0.1"
+Environment="APP_PORT=8000"
 EnvironmentFile=/home/seu_usuario/caminho/para/seu/projeto/projecthub/.env
 
 # Opção 1: para quem instalou com Poetry
-ExecStart=/home/seu_usuario/.cache/pypoetry/virtualenvs/projecthub-py3.12/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+ExecStart=/home/seu_usuario/.cache/pypoetry/virtualenvs/projecthub-py3.12/bin/uvicorn main:app --host ${APP_HOST} --port ${APP_PORT}
 
 # Opção 2: para quem instalou com pip (descomente a linha abaixo e comente a de cima)
-# ExecStart=/home/seu_usuario/caminho/para/seu/projeto/projecthub/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+# ExecStart=/home/seu_usuario/caminho/para/seu/projeto/projecthub/.venv/bin/uvicorn main:app --host ${APP_HOST} --port ${APP_PORT}
 
 # Política de reinicialização automática em caso de falhas
 Restart=always

@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -18,8 +19,6 @@ MONITORED_FOLDER = Path(folder_path)
 
 watcher_router = APIRouter()
 
-
-import json
 
 @watcher_router.get('/stream', response_class=EventSourceResponse)
 async def watch_folder():
