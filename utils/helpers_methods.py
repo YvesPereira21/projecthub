@@ -111,24 +111,32 @@ def determine_project_status(
     recency.
     """
     commit_ts = get_last_commit(project_code_path)
+    if commit_ts == 0:
+        return 'Ideia'
+
     thirty_days = 30 * 24 * 60 * 60
     time_now = time.time()
-    is_recent = commit_ts > 0 and (time_now - commit_ts) <= thirty_days
-    is_old = commit_ts > 0 and (time_now - commit_ts) > thirty_days
+    is_recent = (time_now - commit_ts) <= thirty_days
+    is_old = not is_recent
 
-    if project_pendencies > 0:
+    status = current_status
+
+    if current_status == 'Ideia':
+        if is_recent:
+            status = 'Em desenvolvimento'
+        else:
+            status = 'Parado' if project_pendencies > 0 else 'Concluído'
+    elif project_pendencies > 0:
         if current_status == 'Concluído':
-            if is_old:
-                return 'Parado'
-            return 'Em desenvolvimento' if is_recent else 'Ideia'
-        if current_status == 'Em desenvolvimento' and is_old:
-            return 'Parado'
-        if current_status == 'Parado' and is_recent:
-            return 'Em desenvolvimento'
-    elif project_pendencies == 0 and is_recent:
-        return 'Concluído'
+            status = 'Parado' if is_old else 'Em desenvolvimento'
+        elif current_status == 'Em desenvolvimento' and is_old:
+            status = 'Parado'
+        elif current_status == 'Parado' and is_recent:
+            status = 'Em desenvolvimento'
+    elif is_recent:
+        status = 'Concluído'
 
-    return current_status
+    return status
 
 
 def sync_project_status(project_dir: Path) -> tuple[str, int]:
@@ -176,8 +184,7 @@ def collect_project_data(
     all_pendencies: list[Pendency],
 ) -> tuple[int, str, str]:
     """Collect pendencies, status, and technologies for a given project."""
-    pendencies_in_proj = 0
-    current_status = 'Ideia'
+    status_value, pendencies_in_proj = sync_project_status(project)
     project_code_path = ''
 
     for note in project.iterdir():
@@ -187,12 +194,10 @@ def collect_project_data(
         ):
             continue
 
-        pendencies_in_proj += count_note_pendencies(note)
         all_pendencies.extend(extract_pendencies(note, project.name))
 
         if note.name == 'sobre.md':
             info = load_frontmatter(note)
-            current_status = str(info.get('status', 'Ideia'))
             project_code_path = str(info.get('project_code_path', ''))
             raw_techs = info.get('techs', [])
             if isinstance(raw_techs, list):
@@ -201,4 +206,4 @@ def collect_project_data(
                     if name:
                         tech_counter[name] += 1
 
-    return pendencies_in_proj, current_status, project_code_path
+    return pendencies_in_proj, status_value, project_code_path

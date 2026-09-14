@@ -1,5 +1,4 @@
 import os
-import time
 from collections import Counter
 from pathlib import Path
 
@@ -9,10 +8,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from schemas.metric import ProjectMetrics, Technology
-from utils.helpers_methods import (
-    collect_project_data,
-    get_last_commit,
-)
+from utils.helpers_methods import collect_project_data
 
 load_dotenv()
 
@@ -48,8 +44,6 @@ async def get_metrics(request: Request):
 
     total_projects = 0
     pendency_count = 0
-    time_now = time.time()
-    thirty_days = 30 * 24 * 60 * 60
 
     try:
         projects = [
@@ -76,15 +70,6 @@ async def get_metrics(request: Request):
         if current_status not in project_statuses:
             project_statuses[current_status] = 0
         project_statuses[current_status] += 1
-
-        if current_status == 'Em desenvolvimento':
-            last_commit = get_last_commit(project_code_path)
-            if last_commit == 0:
-                project_statuses['Em desenvolvimento'] -= 1
-                project_statuses['Ideia'] += 1
-            elif (time_now - last_commit) > thirty_days:
-                project_statuses['Em desenvolvimento'] -= 1
-                project_statuses['Parado'] += 1
 
     tech_data = [
         Technology(name=name, count=quantity)
