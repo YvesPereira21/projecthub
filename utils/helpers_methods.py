@@ -147,7 +147,11 @@ def sync_project_status(project_dir: Path) -> tuple[str, int]:
     project_pendencies = 0
     try:
         for n in project_dir.iterdir():
-            if n.is_file() and n.suffix.lower() in ALLOWED_NOTE_EXTENSIONS:
+            if (
+                n.is_file()
+                and n.suffix.lower() in ALLOWED_NOTE_EXTENSIONS
+                and n.name.lower() != f'{project_dir.name.lower()}.md'
+            ):
                 project_pendencies += count_note_pendencies(n)
     except Exception:
         pass
@@ -191,6 +195,7 @@ def collect_project_data(
         if not (
             note.is_file()
             and note.suffix.lower() in ALLOWED_NOTE_EXTENSIONS
+            and note.name.lower() != f'{project.name.lower()}.md'
         ):
             continue
 

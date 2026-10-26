@@ -64,13 +64,19 @@ async def run_command(command: Command):
         cmd_str = f'code "{target_path.resolve()}"'
 
     elif cmd_str == 'docker_run':
-        has_dockerfile = (target_path / 'Dockerfile').exists()
+        compose_files = (
+            'docker-compose.yml',
+            'docker-compose.yaml',
+            'compose.yml',
+            'compose.yaml',
+        )
         has_compose = (
-            (target_path / 'docker-compose.yml').exists()
-            or (target_path / 'docker-compose.yaml').exists()
+            bool(command.cwd)
+            and target_path.is_dir()
+            and any((target_path / f).exists() for f in compose_files)
         )
 
-        if has_dockerfile and has_compose:
+        if has_compose:
             cmd_str = 'docker compose up -d --build'
         else:
             return {
@@ -78,7 +84,7 @@ async def run_command(command: Command):
                 'stdout': '',
                 'stderr': (
                     'Por favor, coloque o projeto no docker. '
-                    'É necessário um Dockerfile e um docker-compose.yml '
+                    'É necessário um docker-compose.yml '
                     'na raiz do projeto.'
                 ),
             }

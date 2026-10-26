@@ -144,6 +144,9 @@ async def get_project(request: Request, relative_path: str):
         ):
             continue
 
+        if note.name.lower() == f'{full_path.name.lower()}.md':
+            continue
+
         note_content = ''
         try:
             note_content = note.read_text(encoding='utf-8')
