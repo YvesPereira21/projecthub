@@ -457,8 +457,8 @@ function updateStatusTagElement(el, status, size) {
     if (!el || !status) return;
     const isLg = size === 'lg';
     const sizeClasses = isLg
-        ? 'text-xs font-bold tracking-wide rounded-xl px-3 py-1'
-        : 'text-[9px] font-bold rounded-lg px-1.5 py-[1px]';
+        ? 'text-xs font-semibold tracking-wider rounded-full px-3 py-1'
+        : 'text-[9px] font-bold rounded-full px-2 py-[1px]';
 
     let colorClasses = '';
     let label = status.toUpperCase();

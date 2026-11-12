@@ -1,10 +1,10 @@
 <div class="projects-list-container">
 	{% if projects %}
 		{% for p in projects %}
-		<section class="project-card bg-slate-950 text-slate-200 border border-slate-800 hover:border-emerald-500 hover:bg-emerald-500/10 transition-all cursor-pointer {% if loop.first %}active{% endif %}"
+		<section class="project-card glass-panel text-slate-100 transition-all cursor-pointer {% if loop.first %}active{% endif %}"
 		data-project-path="{{ p.relative_path }}">
 			<div class="project-card-header">
-				<span class="font-semibold text-slate-200 truncate max-w-[130px]">
+				<span class="font-semibold text-slate-100 truncate max-w-[130px]">
 					{{ p.name }}
 				</span>
 				{% with size = 'sm' %}
@@ -28,9 +28,9 @@
 		</section>
 		{% endfor %}
 	{% else %}
-		<section class="project-card bg-slate-950 text-slate-200 border border-slate-800 hover:border-emerald-500 hover:bg-emerald-500/10 transition-all cursor-pointer active">
+		<section class="project-card glass-panel text-slate-100 transition-all cursor-pointer active">
 			<div class="project-card-header">
-				<span class="font-semibold text-slate-200 truncate max-w-[130px]">
+				<span class="font-semibold text-slate-100 truncate max-w-[130px]">
 					API Gateway
 				</span>
 				{% with size = 'sm' %}
