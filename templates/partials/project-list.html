@@ -4,7 +4,7 @@
 		<section class="project-card glass-panel text-slate-100 transition-all cursor-pointer {% if loop.first %}active{% endif %}"
 		data-project-path="{{ p.relative_path }}">
 			<div class="project-card-header">
-				<span class="font-semibold text-slate-100 truncate max-w-[130px]">
+				<span class="font-semibold text-[0.9rem] text-slate-100 truncate max-w-[8.125rem]">
 					{{ p.name }}
 				</span>
 				{% with size = 'sm' %}
@@ -13,7 +13,7 @@
 			</div>
 
 			<div class="project-card-meta text-slate-400 font-medium mt-1">
-				<span class="truncate max-w-[130px]">
+				<span class="truncate max-w-[8.125rem]">
 					{% if p.technologies %}
 						{{ p.technologies | join(', ') }}
 					{% else %}
@@ -30,7 +30,7 @@
 	{% else %}
 		<section class="project-card glass-panel text-slate-100 transition-all cursor-pointer active">
 			<div class="project-card-header">
-				<span class="font-semibold text-slate-100 truncate max-w-[130px]">
+				<span class="font-semibold text-[0.9rem] text-slate-100 truncate max-w-[8.125rem]">
 					API Gateway
 				</span>
 				{% with size = 'sm' %}
@@ -39,7 +39,7 @@
 			</div>
 
 			<div class="project-card-meta text-slate-400 font-medium mt-1">
-				<span class="truncate max-w-[130px]">FastAPI, Go, HTML, CSS</span>
+				<span class="truncate max-w-[8.125rem]">FastAPI, Go, HTML, CSS</span>
 
 				<div>
 					<span>2 pendência(s)</span>

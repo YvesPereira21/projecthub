@@ -1,7 +1,7 @@
 <header>
 	<section>
 		<div class="header-title-status-group">
-			<span class="text-4xl text-slate-100 font-bold tracking-tight">{{ project.name if project else 'ProjectHub' }}</span>
+			<span class="text-[2rem] text-slate-100 font-bold tracking-tight">{{ project.name if project else 'ProjectHub' }}</span>
 			{% with size = 'lg' %}
 				{% include "partials/tag-status.html" %}
 			{% endwith %}
@@ -14,7 +14,7 @@
 			</span>
 
 			<span class="last-commit git-info-bar font-mono text-xs text-slate-400">
-				<i class="fa-solid fa-code-commit mr-1.5 text-sm text-slate-500"></i>
+				<i class="fa-solid fa-code-commit mr-1.5 text-xs text-slate-500"></i>
 				Último commit: {{ project.last_commit if project else 'Sem commits' }}
 			</span>
 		</div>
@@ -32,7 +32,7 @@
 </header>
 
 <nav class="files-nav">
-	<section class="files carousel rounded-none overflow-x-auto overflow-y-hidden flex-1 min-w-0 no-scrollbar mr-8">
+	<section class="files carousel rounded-none overflow-x-auto overflow-y-hidden flex-1 min-w-0 no-scrollbar mr-6">
 		{% if project and project.notes %}
 			{% for note in project.notes %}
 			<div class="carousel-item tab-item {% if loop.first %}active{% else %}text-slate-400{% endif %} hover:text-slate-200 transition-colors"
@@ -67,13 +67,13 @@
 <article class="workspace" data-mode="view">
 	<section class="content-file w-full">
 		{% if project and project.notes %}
-			<textarea id="editor-area" readonly class="pane glass-panel w-full text-slate-100 font-mono resize-none outline-none text-[0.95rem] leading-[1.7] p-8 rounded-[20px] overflow-y-auto">{{ project.notes[0].content }}</textarea>
+			<textarea id="editor-area" readonly class="pane glass-panel w-full text-slate-100 font-mono resize-none outline-none text-[0.95rem] leading-[1.7] p-7 rounded-[1.25rem] overflow-y-auto">{{ project.notes[0].content }}</textarea>
 
-			<div id="preview-area" class="pane glass-panel w-full prose prose-invert max-w-none text-slate-300 text-base leading-[1.7] p-8 rounded-[20px] overflow-y-auto">
+			<div id="preview-area" class="pane glass-panel w-full prose prose-invert max-w-none text-slate-300 text-base leading-[1.7] p-7 rounded-[1.25rem] overflow-y-auto">
 				{{ project.notes[0].content }}
 			</div>
 		{% else %}
-			<div class="pane glass-panel flex flex-col items-center justify-center py-16 text-center text-slate-400 rounded-[20px] min-h-[360px]">
+			<div class="pane glass-panel flex flex-col items-center justify-center py-16 text-center text-slate-400 rounded-[1.25rem] h-full">
 				<i class="fa-regular fa-folder-open text-4xl text-slate-500 mb-3"></i>
 				<p class="text-base text-slate-300 font-sans">Esse projeto não possui arquivos criados</p>
 			</div>

@@ -2,9 +2,9 @@
 {% set tag_size = size | default('sm') %}
 
 {% if tag_size == 'lg' %}
-	{% set size_classes = "text-xs font-semibold tracking-wider rounded-full px-3 py-1" %}
+	{% set size_classes = "text-[0.6875rem] font-semibold tracking-wider rounded-full px-2.5 py-0.5" %}
 {% else %}
-	{% set size_classes = "text-[9px] font-bold rounded-full px-2 py-[1px]" %}
+	{% set size_classes = "text-[0.5625rem] font-bold rounded-full px-1.5 py-[1px]" %}
 {% endif %}
 
 {% if current_status == 'Em desenvolvimento' %}
