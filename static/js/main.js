@@ -389,68 +389,159 @@ function toggleTerminal() {
     if (terminal) terminal.classList.toggle('terminal-open');
 }
 
+function appendTerminalEntry(logs, text, className, iconClass = null) {
+    const entry = document.createElement('div');
+    entry.className = className;
+
+    if (iconClass) {
+        const icon = document.createElement('i');
+        icon.className = iconClass;
+        entry.appendChild(icon);
+    }
+
+    entry.appendChild(document.createTextNode(text));
+    logs.appendChild(entry);
+    logs.scrollTop = logs.scrollHeight;
+    return entry;
+}
+
+function appendStreamChunk(logs, entryState, kind, rawText) {
+    const normalized = rawText.replace(/\r/g, '\n');
+    if (!normalized) return null;
+
+    if (!entryState[kind]) {
+        const baseClass = kind === 'stdout'
+            ? 'mb-[6px] text-slate-300 text-xs whitespace-pre-wrap'
+            : 'mb-[6px] text-slate-400 text-xs whitespace-pre-wrap';
+        entryState[kind] = appendTerminalEntry(logs, '', baseClass);
+    }
+
+    entryState[kind].textContent += normalized;
+    logs.scrollTop = logs.scrollHeight;
+    return entryState[kind];
+}
+
 async function runCmd(cmd, cwd = '') {
     const terminal = document.getElementById('terminalOverlay');
     const logs = document.getElementById('terminalLogs');
-    
+
     if (terminal && !terminal.classList.contains('terminal-open')) {
         toggleTerminal();
     }
-    
-    if (logs) {
-        let displayCmd = cmd === 'docker_run' ? 'docker compose up -d --build' : cmd;
-        logs.innerHTML += `<div class="mb-[6px] text-slate-100 font-semibold">$ ${displayCmd}</div>`;
-        if (cmd === 'docker_run') {
-            logs.innerHTML += `<div class="mb-[6px] text-teal-400 font-mono text-xs"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Iniciando containers Docker em background...</div>`;
-        }
-        logs.scrollTop = logs.scrollHeight;
-        
-        try {
-            const response = await axios.post('/api/v1/commands', {
-                command: cmd,
-                cwd: cwd || null
-            });
-            
-            const data = response.data;
-            if (data.stdout) {
-                logs.innerHTML += `<div class="mb-[6px] text-slate-300 text-xs whitespace-pre-wrap">${data.stdout}</div>`;
-            }
-            if (data.stderr) {
-                let colorClass = data.exit_code === 0 ? 'text-slate-400 text-xs' : 'text-amber-400 text-xs';
-                logs.innerHTML += `<div class="mb-[6px] ${colorClass} whitespace-pre-wrap">${data.stderr}</div>`;
-            }
-            
-            if (data.exit_code === 0) {
-                if (cmd === 'docker_run') {
-                    logs.innerHTML += `<div class="mb-[6px] text-emerald-400 font-semibold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> [DOCKER] A aplicação Docker está rodando com sucesso!</div>`;
-                } else if (cmd.startsWith('code')) {
-                    logs.innerHTML += `<div class="mb-[6px] text-emerald-400">[OK] VSCode aberto com sucesso.</div>`;
-                } else {
-                    logs.innerHTML += `<div class="mb-[6px] text-emerald-400">[OK] Comando executado com sucesso.</div>`;
-                }
-            } else {
-                logs.innerHTML += `<div class="mb-[6px] text-red-500">[ERRO] Falha ao executar. Código: ${data.exit_code}</div>`;
-            }
-        } catch (error) {
-            let errorMsg = 'Erro de comunicação com a API local.';
-            if (error.response?.data?.stderr) {
-                errorMsg = error.response.data.stderr;
-            } else if (error.response?.data?.detail) {
-                errorMsg = error.response.data.detail;
-            } else if (error.message) {
-                errorMsg = error.message;
-            }
-            logs.innerHTML += `<div class="mb-[6px] text-red-500 whitespace-pre-wrap">[FALHA] ${errorMsg}</div>`;
-            console.error(error);
-        }
-        
-        logs.scrollTop = logs.scrollHeight;
+
+    if (!logs) return;
+
+    const displayCmd = cmd === 'docker_run' ? 'docker compose up -d --build' : cmd;
+    appendTerminalEntry(logs, `$ ${displayCmd}`, 'mb-[6px] text-slate-100 font-semibold');
+
+    let statusEntry = null;
+    if (cmd === 'docker_run') {
+        statusEntry = appendTerminalEntry(
+            logs,
+            'Iniciando containers Docker em background...',
+            'mb-[6px] text-teal-400 font-mono text-xs',
+            'fa-solid fa-spinner fa-spin mr-1.5',
+        );
     }
+
+    try {
+        const response = await fetch('/api/v1/commands/stream', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                command: cmd,
+                cwd: cwd || null,
+            }),
+        });
+
+        if (!response.ok || !response.body) {
+            let errorDetail = `Erro HTTP ${response.status}`;
+            try {
+                const payload = await response.json();
+                errorDetail = payload.stderr || payload.detail || errorDetail;
+            } catch {
+                // Keep default HTTP status message when body is not JSON
+            }
+            throw new Error(errorDetail);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let exitCode = null;
+        const streamEntries = { stdout: null, stderr: null };
+
+        const handleEventLine = (line) => {
+            if (!line.trim()) return;
+            const event = JSON.parse(line);
+            if (event.type === 'stdout' || event.type === 'stderr') {
+                appendStreamChunk(logs, streamEntries, event.type, event.text || '');
+            } else if (event.type === 'exit') {
+                exitCode = event.exit_code;
+            }
+        };
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() ?? '';
+            for (const line of lines) {
+                handleEventLine(line);
+            }
+        }
+
+        buffer += decoder.decode();
+        if (buffer.trim()) {
+            handleEventLine(buffer);
+        }
+
+        if (statusEntry) {
+            const spinner = statusEntry.querySelector('.fa-spinner');
+            if (spinner) spinner.classList.remove('fa-spin');
+        }
+
+        if (exitCode === null) {
+            throw new Error('Conexão encerrada antes da conclusão do comando.');
+        }
+
+        if (exitCode === 0) {
+            if (cmd === 'docker_run') {
+                appendTerminalEntry(
+                    logs,
+                    '[DOCKER] A aplicação Docker está rodando com sucesso!',
+                    'mb-[6px] text-emerald-400 font-semibold flex items-center gap-1.5',
+                    'fa-solid fa-circle-check',
+                );
+            } else if (cmd.startsWith('code')) {
+                appendTerminalEntry(logs, '[OK] VSCode aberto com sucesso.', 'mb-[6px] text-emerald-400');
+            } else {
+                appendTerminalEntry(logs, '[OK] Comando executado com sucesso.', 'mb-[6px] text-emerald-400');
+            }
+        } else {
+            if (streamEntries.stderr) {
+                streamEntries.stderr.className = 'mb-[6px] text-amber-400 text-xs whitespace-pre-wrap';
+            }
+            appendTerminalEntry(logs, `[ERRO] Falha ao executar. Código: ${exitCode}`, 'mb-[6px] text-red-500');
+        }
+    } catch (error) {
+        if (statusEntry) {
+            const spinner = statusEntry.querySelector('.fa-spinner');
+            if (spinner) spinner.classList.remove('fa-spin');
+        }
+        const errorMsg = error?.message || 'Erro de comunicação com a API local.';
+        appendTerminalEntry(logs, `[FALHA] ${errorMsg}`, 'mb-[6px] text-red-500 whitespace-pre-wrap');
+        console.error(error);
+    }
+
+    logs.scrollTop = logs.scrollHeight;
 }
 
 function clearLogs() {
     const logs = document.getElementById('terminalLogs');
-    if (logs) logs.innerHTML = '';
+    if (logs) logs.replaceChildren();
 }
 
 function updateStatusTagElement(el, status, size) {
