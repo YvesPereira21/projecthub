@@ -94,21 +94,7 @@ body {
 .brand-logo {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
     color: var(--text-primary);
-}
-
-.logo-icon {
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, var(--accent-emerald), var(--accent-teal));
-    color: #020617;
-    display: grid;
-    place-content: center;
-    font-size: 0.875rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
 }
 
 .sidebar-nav {
